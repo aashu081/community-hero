@@ -1,0 +1,767 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Community Hero - Authority Dashboard</title>
+    <script
+      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBIb-e03JgsYkDtpSVJKOIhlIDM91nqma0&callback=initMap"
+      async
+      defer
+    ></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Segoe UI", sans-serif;
+        background: #0f0f1a;
+        color: #fff;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 16px 24px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .header h1 {
+        font-size: 20px;
+        font-weight: 700;
+      }
+      .header p {
+        font-size: 12px;
+        opacity: 0.85;
+      }
+
+      .stats-bar {
+        display: flex;
+        background: #1a1a2e;
+        border-bottom: 1px solid #333;
+        padding: 12px 24px;
+        gap: 24px;
+        overflow-x: auto;
+      }
+
+      .stat {
+        text-align: center;
+        min-width: 80px;
+      }
+
+      .stat .number {
+        font-size: 24px;
+        font-weight: 700;
+        color: #667eea;
+      }
+
+      .stat .label {
+        font-size: 11px;
+        color: #666;
+        margin-top: 2px;
+      }
+
+      .stat.reported .number {
+        color: #ff4444;
+      }
+      .stat.progress .number {
+        color: #ff8800;
+      }
+      .stat.resolved .number {
+        color: #44ff88;
+      }
+
+      .main {
+        display: flex;
+        flex: 1;
+        overflow: hidden;
+      }
+
+      /* MAP */
+      #map {
+        flex: 1;
+        height: 100%;
+      }
+
+      /* SIDEBAR */
+      .sidebar {
+        width: 380px;
+        background: #1a1a2e;
+        border-left: 1px solid #333;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+
+      .sidebar-header {
+        padding: 16px;
+        border-bottom: 1px solid #333;
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+
+      .filter-btn {
+        padding: 6px 12px;
+        border-radius: 20px;
+        border: 1px solid #333;
+        background: none;
+        color: #888;
+        font-size: 12px;
+        cursor: pointer;
+        transition: all 0.3s;
+      }
+
+      .filter-btn.active {
+        background: #667eea;
+        border-color: #667eea;
+        color: #fff;
+      }
+
+      .issues-list {
+        flex: 1;
+        overflow-y: auto;
+        padding: 12px;
+      }
+
+      .issue-card {
+        background: #16213e;
+        border: 1px solid #333;
+        border-radius: 12px;
+        padding: 14px;
+        margin-bottom: 10px;
+        cursor: pointer;
+        transition: all 0.3s;
+      }
+
+      .issue-card:hover {
+        border-color: #667eea;
+      }
+      .issue-card.selected {
+        border-color: #667eea;
+        background: #1a2a4a;
+      }
+
+      .issue-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 8px;
+      }
+
+      .issue-id {
+        color: #667eea;
+        font-size: 11px;
+        font-weight: 600;
+      }
+
+      .severity-badge {
+        padding: 3px 8px;
+        border-radius: 20px;
+        font-size: 10px;
+        font-weight: 600;
+      }
+
+      .severity-Critical {
+        background: #ff144433;
+        color: #ff4444;
+        border: 1px solid #ff4444;
+      }
+      .severity-High {
+        background: #ff880033;
+        color: #ff8800;
+        border: 1px solid #ff8800;
+      }
+      .severity-Medium {
+        background: #ffcc0033;
+        color: #ffcc00;
+        border: 1px solid #ffcc00;
+      }
+      .severity-Low {
+        background: #44ff8833;
+        color: #44ff88;
+        border: 1px solid #44ff88;
+      }
+
+      .issue-title {
+        font-size: 14px;
+        font-weight: 600;
+        margin-bottom: 6px;
+      }
+      .issue-meta {
+        font-size: 11px;
+        color: #666;
+        line-height: 1.6;
+      }
+
+      .issue-img {
+        width: 100%;
+        height: 120px;
+        object-fit: cover;
+        border-radius: 8px;
+        margin: 8px 0;
+      }
+
+      .status-select {
+        width: 100%;
+        background: #0f0f1a;
+        border: 1px solid #333;
+        border-radius: 8px;
+        padding: 8px;
+        color: #fff;
+        font-size: 12px;
+        cursor: pointer;
+        margin-top: 8px;
+      }
+
+      .upvotes {
+        font-size: 11px;
+        color: #667eea;
+        margin-top: 6px;
+      }
+
+      /* DETAIL PANEL */
+      .detail-panel {
+        position: fixed;
+        top: 0;
+        right: 0;
+        width: 420px;
+        height: 100vh;
+        background: #1a1a2e;
+        border-left: 1px solid #667eea;
+        z-index: 1000;
+        display: none;
+        flex-direction: column;
+        overflow-y: auto;
+      }
+
+      .detail-panel.open {
+        display: flex;
+      }
+
+      .detail-header {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        padding: 20px;
+        position: sticky;
+        top: 0;
+      }
+
+      .detail-header h2 {
+        font-size: 16px;
+      }
+      .close-btn {
+        position: absolute;
+        top: 16px;
+        right: 16px;
+        background: rgba(255, 255, 255, 0.2);
+        border: none;
+        color: #fff;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        cursor: pointer;
+        font-size: 16px;
+      }
+
+      .detail-body {
+        padding: 20px;
+      }
+
+      .detail-img {
+        width: 100%;
+        border-radius: 12px;
+        margin-bottom: 16px;
+      }
+
+      .detail-section {
+        background: #16213e;
+        border-radius: 10px;
+        padding: 14px;
+        margin-bottom: 12px;
+      }
+
+      .detail-section h4 {
+        color: #667eea;
+        font-size: 12px;
+        margin-bottom: 8px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+
+      .detail-section p {
+        font-size: 13px;
+        color: #ccc;
+        line-height: 1.6;
+      }
+
+      .detail-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 6px;
+        font-size: 13px;
+      }
+
+      .detail-row span:first-child {
+        color: #666;
+      }
+      .detail-row span:last-child {
+        color: #fff;
+        font-weight: 500;
+      }
+
+      .status-update {
+        display: flex;
+        gap: 8px;
+        margin-top: 8px;
+      }
+
+      .status-btn {
+        flex: 1;
+        padding: 8px;
+        border-radius: 8px;
+        border: 1px solid #333;
+        background: none;
+        color: #888;
+        font-size: 11px;
+        cursor: pointer;
+        transition: all 0.3s;
+      }
+
+      .status-btn:hover {
+        border-color: #667eea;
+        color: #667eea;
+      }
+      .status-btn.active-status {
+        background: #667eea;
+        border-color: #667eea;
+        color: #fff;
+      }
+
+      .loading {
+        text-align: center;
+        padding: 40px;
+        color: #667eea;
+      }
+
+      .spinner {
+        width: 40px;
+        height: 40px;
+        border: 3px solid #333;
+        border-top-color: #667eea;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+        margin: 0 auto 16px;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      .empty {
+        text-align: center;
+        padding: 40px;
+        color: #444;
+      }
+
+      /* Map dark style */
+      .gm-style {
+        filter: invert(90%) hue-rotate(180deg);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <div>
+        <h1>🏛️ Authority Dashboard</h1>
+        <p>Community Hero — Issue Management System</p>
+      </div>
+      <div style="text-align: right">
+        <div style="font-size: 12px; color: rgba(255, 255, 255, 0.7)">
+          Last updated
+        </div>
+        <div style="font-size: 13px" id="lastUpdated">—</div>
+      </div>
+    </div>
+
+    <!-- STATS BAR -->
+    <div class="stats-bar">
+      <div class="stat">
+        <div class="number" id="statTotal">—</div>
+        <div class="label">Total Issues</div>
+      </div>
+      <div class="stat reported">
+        <div class="number" id="statReported">—</div>
+        <div class="label">Reported</div>
+      </div>
+      <div class="stat progress">
+        <div class="number" id="statProgress">—</div>
+        <div class="label">In Progress</div>
+      </div>
+      <div class="stat resolved">
+        <div class="number" id="statResolved">—</div>
+        <div class="label">Resolved</div>
+      </div>
+      <div class="stat">
+        <div class="number" id="statCritical" style="color: #ff4444">—</div>
+        <div class="label">Critical</div>
+      </div>
+    </div>
+
+    <div class="main">
+      <!-- MAP -->
+      <div id="map"></div>
+
+      <!-- SIDEBAR -->
+      <div class="sidebar">
+        <div class="sidebar-header">
+          <button class="filter-btn active" onclick="filterIssues('all', this)">
+            All
+          </button>
+          <button class="filter-btn" onclick="filterIssues('Reported', this)">
+            🔴 Reported
+          </button>
+          <button
+            class="filter-btn"
+            onclick="filterIssues('In Progress', this)"
+          >
+            🟡 In Progress
+          </button>
+          <button class="filter-btn" onclick="filterIssues('Resolved', this)">
+            🟢 Resolved
+          </button>
+          <button class="filter-btn" onclick="filterIssues('Critical', this)">
+            ⚠️ Critical
+          </button>
+        </div>
+        <div class="issues-list" id="issuesList">
+          <div class="loading">
+            <div class="spinner"></div>
+            <p>Loading issues...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DETAIL PANEL -->
+    <div class="detail-panel" id="detailPanel">
+      <div class="detail-header">
+        <h2 id="detailTitle">Issue Details</h2>
+        <button class="close-btn" onclick="closeDetail()">✕</button>
+      </div>
+      <div class="detail-body" id="detailBody"></div>
+    </div>
+
+    <script>
+      const API = "https://community-hero-782012687300.asia-south1.run.app";
+      let map,
+        allIssues = [],
+        markers = [];
+      let currentFilter = "all";
+
+      // ─── MAP INIT ───
+      function initMap() {
+        map = new google.maps.Map(document.getElementById("map"), {
+          center: { lat: 28.8386, lng: 78.7733 },
+          zoom: 13,
+          styles: [
+            { elementType: "geometry", stylers: [{ color: "#1a1a2e" }] },
+            {
+              elementType: "labels.text.stroke",
+              stylers: [{ color: "#1a1a2e" }],
+            },
+            {
+              elementType: "labels.text.fill",
+              stylers: [{ color: "#746855" }],
+            },
+            {
+              featureType: "road",
+              elementType: "geometry",
+              stylers: [{ color: "#38414e" }],
+            },
+            {
+              featureType: "road",
+              elementType: "labels.text.fill",
+              stylers: [{ color: "#9ca5b3" }],
+            },
+            {
+              featureType: "water",
+              elementType: "geometry",
+              stylers: [{ color: "#0f0f1a" }],
+            },
+            { featureType: "poi", stylers: [{ visibility: "off" }] },
+          ],
+        });
+        loadIssues();
+        setInterval(loadIssues, 30000);
+      }
+
+      // ─── LOAD ISSUES ───
+      async function loadIssues() {
+        try {
+          const res = await fetch(`${API}/issues`);
+          const data = await res.json();
+          allIssues = data.issues || [];
+
+          updateStats();
+          renderIssues(allIssues);
+          updateMarkers(allIssues);
+
+          document.getElementById("lastUpdated").textContent =
+            new Date().toLocaleTimeString("en-IN");
+        } catch (err) {
+          console.error("Error loading issues:", err);
+        }
+      }
+
+      // ─── STATS ───
+      function updateStats() {
+        const stats = {
+          total: allIssues.length,
+          reported: allIssues.filter((i) => i.status === "Reported").length,
+          inProgress: allIssues.filter((i) => i.status === "In Progress")
+            .length,
+          resolved: allIssues.filter((i) => i.status === "Resolved").length,
+          critical: allIssues.filter(
+            (i) => i.ai_analysis?.severity === "Critical",
+          ).length,
+        };
+
+        document.getElementById("statTotal").textContent = stats.total;
+        document.getElementById("statReported").textContent = stats.reported;
+        document.getElementById("statProgress").textContent = stats.inProgress;
+        document.getElementById("statResolved").textContent = stats.resolved;
+        document.getElementById("statCritical").textContent = stats.critical;
+      }
+
+      // ─── MARKERS ───
+      function updateMarkers(issues) {
+        markers.forEach((m) => m.setMap(null));
+        markers = [];
+
+        const icons = {
+          Critical: "🔴",
+          High: "🟠",
+          Medium: "🟡",
+          Low: "🟢",
+        };
+
+        issues.forEach((issue) => {
+          if (!issue.location?.lat) return;
+
+          const severity = issue.ai_analysis?.severity || "Low";
+
+          const marker = new google.maps.Marker({
+            position: { lat: issue.location.lat, lng: issue.location.lng },
+            map: map,
+            title: issue.ai_analysis?.title || "Issue",
+            icon: {
+              url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`
+                        <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40">
+                            <circle cx="20" cy="20" r="18" fill="${severity === "Critical" ? "#ff4444" : severity === "High" ? "#ff8800" : severity === "Medium" ? "#ffcc00" : "#44ff88"}" opacity="0.9"/>
+                            <text x="20" y="25" text-anchor="middle" font-size="16">📍</text>
+                        </svg>
+                    `)}`,
+              scaledSize: new google.maps.Size(40, 40),
+            },
+          });
+
+          marker.addListener("click", () => showDetail(issue));
+          markers.push(marker);
+        });
+      }
+
+      // ─── FILTER ───
+      function filterIssues(filter, btn) {
+        currentFilter = filter;
+        document
+          .querySelectorAll(".filter-btn")
+          .forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+
+        let filtered = allIssues;
+        if (filter === "Critical") {
+          filtered = allIssues.filter(
+            (i) => i.ai_analysis?.severity === "Critical",
+          );
+        } else if (filter !== "all") {
+          filtered = allIssues.filter((i) => i.status === filter);
+        }
+
+        renderIssues(filtered);
+        updateMarkers(filtered);
+      }
+
+      // ─── RENDER ISSUES ───
+      function renderIssues(issues) {
+        const container = document.getElementById("issuesList");
+
+        if (issues.length === 0) {
+          container.innerHTML = '<div class="empty">No issues found</div>';
+          return;
+        }
+
+        container.innerHTML = issues
+          .map((issue) => {
+            const ai = issue.ai_analysis || {};
+            const severity = ai.severity || "Low";
+            return `
+                <div class="issue-card" onclick="showDetail(${JSON.stringify(issue).replace(/"/g, "&quot;")})">
+                    <div class="issue-card-header">
+                        <span class="issue-id">#${issue.issue_id}</span>
+                        <span class="severity-badge severity-${severity}">${severity}</span>
+                    </div>
+                    <div class="issue-title">${ai.title || "Issue Reported"}</div>
+                    <img class="issue-img" src="${issue.image_url}" alt="Issue">
+                    <div class="issue-meta">
+                        🏢 ${ai.suggested_department || "N/A"}<br>
+                        ⏰ ${ai.estimated_urgency || "N/A"}<br>
+                        👍 ${issue.upvotes || 0} upvotes &nbsp;•&nbsp;
+                        📅 ${new Date(issue.created_at).toLocaleDateString("en-IN")}
+                    </div>
+                    <div style="margin-top:8px">
+                        <span style="font-size:11px; padding:3px 8px; border-radius:20px; 
+                        background:${issue.status === "Resolved" ? "#44ff8833" : issue.status === "In Progress" ? "#ff880033" : "#ff444433"};
+                        color:${issue.status === "Resolved" ? "#44ff88" : issue.status === "In Progress" ? "#ff8800" : "#ff4444"}">
+                            ${issue.status}
+                        </span>
+                    </div>
+                </div>
+            `;
+          })
+          .join("");
+      }
+
+      // ─── DETAIL PANEL ───
+      function showDetail(issue) {
+        const ai = issue.ai_analysis || {};
+        const panel = document.getElementById("detailPanel");
+        document.getElementById("detailTitle").textContent =
+          ai.title || "Issue Details";
+
+        document.getElementById("detailBody").innerHTML = `
+            <img class="detail-img" src="${issue.image_url}" alt="Issue Photo">
+
+            <div class="detail-section">
+                <h4>🤖 AI Analysis</h4>
+                <div class="detail-row">
+                    <span>Category</span>
+                    <span>${ai.category || "N/A"}</span>
+                </div>
+                <div class="detail-row">
+                    <span>Severity</span>
+                    <span class="severity-badge severity-${ai.severity}">${ai.severity || "N/A"}</span>
+                </div>
+                <div class="detail-row">
+                    <span>Department</span>
+                    <span>${ai.suggested_department || "N/A"}</span>
+                </div>
+                <div class="detail-row">
+                    <span>Urgency</span>
+                    <span>${ai.estimated_urgency || "N/A"}</span>
+                </div>
+                <div class="detail-row">
+                    <span>AI Confidence</span>
+                    <span>${((ai.confidence || 0) * 100).toFixed(0)}%</span>
+                </div>
+                <p style="margin-top:10px">${ai.description || ""}</p>
+            </div>
+
+            <div class="detail-section">
+                <h4>👤 Citizen Info</h4>
+                <div class="detail-row">
+                    <span>Name</span>
+                    <span>${issue.citizen_name}</span>
+                </div>
+                <div class="detail-row">
+                    <span>Phone</span>
+                    <span>${issue.citizen_phone}</span>
+                </div>
+                <div class="detail-row">
+                    <span>Reported</span>
+                    <span>${new Date(issue.created_at).toLocaleString("en-IN")}</span>
+                </div>
+                <div class="detail-row">
+                    <span>Upvotes</span>
+                    <span>👍 ${issue.upvotes || 0}</span>
+                </div>
+            </div>
+
+            <div class="detail-section">
+                <h4>📍 Location</h4>
+                <div class="detail-row">
+                    <span>Coordinates</span>
+                    <span>${issue.location?.lat?.toFixed(5)}, ${issue.location?.lng?.toFixed(5)}</span>
+                </div>
+                <a href="https://maps.google.com/?q=${issue.location?.lat},${issue.location?.lng}" 
+                   target="_blank"
+                   style="display:block; margin-top:10px; padding:8px; background:#667eea; 
+                          border-radius:8px; text-align:center; color:#fff; text-decoration:none; font-size:13px">
+                    🗺️ Open in Google Maps
+                </a>
+            </div>
+
+            <div class="detail-section">
+                <h4>📋 Update Status</h4>
+                <div class="status-update">
+                    <button class="status-btn ${issue.status === "Reported" ? "active-status" : ""}" 
+                            onclick="updateStatus('${issue.issue_id}', 'Reported', this)">
+                        🔴 Reported
+                    </button>
+                    <button class="status-btn ${issue.status === "In Progress" ? "active-status" : ""}"
+                            onclick="updateStatus('${issue.issue_id}', 'In Progress', this)">
+                        🟡 In Progress
+                    </button>
+                    <button class="status-btn ${issue.status === "Resolved" ? "active-status" : ""}"
+                            onclick="updateStatus('${issue.issue_id}', 'Resolved', this)">
+                        🟢 Resolved
+                    </button>
+                </div>
+            </div>
+        `;
+
+        panel.classList.add("open");
+
+        // Pan map to issue
+        if (map && issue.location?.lat) {
+          map.panTo({ lat: issue.location.lat, lng: issue.location.lng });
+          map.setZoom(16);
+        }
+      }
+
+      function closeDetail() {
+        document.getElementById("detailPanel").classList.remove("open");
+      }
+
+      // ─── UPDATE STATUS ───
+      async function updateStatus(issueId, status, btn) {
+        try {
+          const formData = new FormData();
+          formData.append("status", status);
+
+          await fetch(`${API}/issues/${issueId}/status`, {
+            method: "PATCH",
+            body: formData,
+          });
+
+          document
+            .querySelectorAll(".status-btn")
+            .forEach((b) => b.classList.remove("active-status"));
+          btn.classList.add("active-status");
+
+          await loadIssues();
+        } catch (err) {
+          alert("Error updating status: " + err.message);
+        }
+      }
+    </script>
+  </body>
+</html>

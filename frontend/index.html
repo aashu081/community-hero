@@ -1,0 +1,728 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Community Hero - Report Issue</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Segoe UI", sans-serif;
+        background: #0f0f1a;
+        color: #fff;
+        min-height: 100vh;
+      }
+
+      .header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 20px;
+        text-align: center;
+        box-shadow: 0 4px 20px rgba(102, 126, 234, 0.4);
+      }
+
+      .header h1 {
+        font-size: 24px;
+        font-weight: 700;
+      }
+      .header p {
+        font-size: 13px;
+        opacity: 0.85;
+        margin-top: 4px;
+      }
+
+      .nav {
+        display: flex;
+        background: #1a1a2e;
+        border-bottom: 1px solid #333;
+      }
+
+      .nav button {
+        flex: 1;
+        padding: 14px;
+        background: none;
+        border: none;
+        color: #888;
+        font-size: 14px;
+        cursor: pointer;
+        transition: all 0.3s;
+      }
+
+      .nav button.active {
+        color: #667eea;
+        border-bottom: 2px solid #667eea;
+        background: #16213e;
+      }
+
+      .page {
+        display: none;
+        padding: 20px;
+        max-width: 480px;
+        margin: 0 auto;
+      }
+      .page.active {
+        display: block;
+      }
+
+      /* REPORT PAGE */
+      .camera-section {
+        background: #1a1a2e;
+        border: 2px dashed #667eea;
+        border-radius: 16px;
+        padding: 30px 20px;
+        text-align: center;
+        margin-bottom: 20px;
+        cursor: pointer;
+        transition: all 0.3s;
+      }
+
+      .camera-section:hover {
+        background: #16213e;
+      }
+      .camera-section .icon {
+        font-size: 48px;
+        margin-bottom: 10px;
+      }
+      .camera-section p {
+        color: #888;
+        font-size: 14px;
+      }
+
+      #imagePreview {
+        width: 100%;
+        border-radius: 12px;
+        margin-bottom: 20px;
+        display: none;
+        max-height: 300px;
+        object-fit: cover;
+      }
+
+      #cameraInput {
+        display: none;
+      }
+
+      .location-badge {
+        background: #16213e;
+        border: 1px solid #333;
+        border-radius: 10px;
+        padding: 12px 16px;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 13px;
+      }
+
+      .location-badge .dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: #ff4444;
+        animation: pulse 1.5s infinite;
+      }
+
+      .location-badge .dot.found {
+        background: #44ff88;
+        animation: none;
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.3;
+        }
+      }
+
+      .form-group {
+        margin-bottom: 16px;
+      }
+
+      .form-group label {
+        display: block;
+        font-size: 13px;
+        color: #888;
+        margin-bottom: 6px;
+      }
+
+      .form-group input,
+      .form-group select {
+        width: 100%;
+        background: #1a1a2e;
+        border: 1px solid #333;
+        border-radius: 10px;
+        padding: 12px 16px;
+        color: #fff;
+        font-size: 14px;
+        outline: none;
+        transition: border 0.3s;
+      }
+
+      .form-group input:focus,
+      .form-group select:focus {
+        border-color: #667eea;
+      }
+
+      .form-group select option {
+        background: #1a1a2e;
+      }
+
+      .btn-submit {
+        width: 100%;
+        padding: 16px;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        border: none;
+        border-radius: 12px;
+        color: #fff;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        margin-top: 10px;
+      }
+
+      .btn-submit:hover {
+        opacity: 0.9;
+        transform: translateY(-1px);
+      }
+      .btn-submit:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      /* AI RESULT CARD */
+      .ai-result {
+        background: linear-gradient(135deg, #1a1a2e, #16213e);
+        border: 1px solid #667eea;
+        border-radius: 16px;
+        padding: 20px;
+        margin-top: 20px;
+        display: none;
+      }
+
+      .ai-result h3 {
+        color: #667eea;
+        margin-bottom: 12px;
+        font-size: 14px;
+      }
+
+      .ai-badge {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        margin: 4px 4px 4px 0;
+      }
+
+      .severity-Critical {
+        background: #ff144433;
+        color: #ff4444;
+        border: 1px solid #ff4444;
+      }
+      .severity-High {
+        background: #ff880033;
+        color: #ff8800;
+        border: 1px solid #ff8800;
+      }
+      .severity-Medium {
+        background: #ffcc0033;
+        color: #ffcc00;
+        border: 1px solid #ffcc00;
+      }
+      .severity-Low {
+        background: #44ff8833;
+        color: #44ff88;
+        border: 1px solid #44ff88;
+      }
+
+      .success-card {
+        background: #0d2818;
+        border: 1px solid #44ff88;
+        border-radius: 16px;
+        padding: 24px;
+        text-align: center;
+        margin-top: 20px;
+        display: none;
+      }
+
+      .success-card .checkmark {
+        font-size: 48px;
+        margin-bottom: 12px;
+      }
+      .success-card h3 {
+        color: #44ff88;
+        margin-bottom: 8px;
+      }
+      .success-card p {
+        color: #888;
+        font-size: 13px;
+      }
+      .issue-id {
+        color: #667eea;
+        font-weight: 700;
+        font-size: 18px;
+        margin: 8px 0;
+      }
+
+      /* MY COMPLAINTS PAGE */
+      .complaint-card {
+        background: #1a1a2e;
+        border: 1px solid #333;
+        border-radius: 14px;
+        padding: 16px;
+        margin-bottom: 14px;
+        transition: all 0.3s;
+      }
+
+      .complaint-card:hover {
+        border-color: #667eea;
+      }
+
+      .complaint-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 10px;
+      }
+
+      .complaint-id {
+        color: #667eea;
+        font-size: 12px;
+        font-weight: 600;
+      }
+
+      .status-badge {
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 600;
+      }
+
+      .status-Reported {
+        background: #ff444433;
+        color: #ff4444;
+      }
+      .status-In.Progress {
+        background: #ff880033;
+        color: #ff8800;
+      }
+      .status-Resolved {
+        background: #44ff8833;
+        color: #44ff88;
+      }
+
+      .complaint-title {
+        font-size: 15px;
+        font-weight: 600;
+        margin-bottom: 6px;
+      }
+      .complaint-meta {
+        font-size: 12px;
+        color: #666;
+      }
+
+      .complaint-img {
+        width: 100%;
+        height: 140px;
+        object-fit: cover;
+        border-radius: 10px;
+        margin-top: 10px;
+      }
+
+      .upvote-btn {
+        background: #16213e;
+        border: 1px solid #333;
+        border-radius: 8px;
+        color: #888;
+        padding: 6px 14px;
+        font-size: 12px;
+        cursor: pointer;
+        margin-top: 10px;
+        transition: all 0.3s;
+      }
+
+      .upvote-btn:hover {
+        border-color: #667eea;
+        color: #667eea;
+      }
+
+      .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: #444;
+      }
+
+      .empty-state .icon {
+        font-size: 48px;
+        margin-bottom: 16px;
+      }
+
+      .loading {
+        text-align: center;
+        padding: 40px;
+        color: #667eea;
+      }
+
+      .spinner {
+        width: 40px;
+        height: 40px;
+        border: 3px solid #333;
+        border-top-color: #667eea;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+        margin: 0 auto 16px;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      .phone-input {
+        display: flex;
+        gap: 8px;
+      }
+      .phone-prefix {
+        background: #1a1a2e;
+        border: 1px solid #333;
+        border-radius: 10px;
+        padding: 12px;
+        color: #888;
+        font-size: 14px;
+        white-space: nowrap;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <h1>🏘️ Community Hero</h1>
+      <p>Report civic issues in your area</p>
+    </div>
+
+    <div class="nav">
+      <button class="active" onclick="showPage('report')">
+        📷 Report Issue
+      </button>
+      <button onclick="showPage('complaints')">📋 My Complaints</button>
+    </div>
+
+    <!-- REPORT PAGE -->
+    <div id="reportPage" class="page active">
+      <div style="margin-top: 20px">
+        <div class="camera-section" onclick="openCamera()">
+          <div class="icon">📷</div>
+          <p>Tap to capture issue photo</p>
+          <p style="font-size: 11px; margin-top: 4px; color: #555">
+            Camera will open directly
+          </p>
+        </div>
+
+        <input
+          type="file"
+          id="cameraInput"
+          accept="image/*"
+          capture="environment"
+          id="cameraInput"
+        />
+        <img id="imagePreview" alt="Preview" />
+
+        <div class="location-badge" id="locationBadge">
+          <div class="dot" id="locationDot"></div>
+          <span id="locationText">Detecting your location...</span>
+        </div>
+
+        <div class="form-group">
+          <label>Your Name</label>
+          <input
+            type="text"
+            id="citizenName"
+            placeholder="Enter your full name"
+          />
+        </div>
+
+        <div class="form-group">
+          <label>Phone Number</label>
+          <div class="phone-input">
+            <span class="phone-prefix">🇮🇳 +91</span>
+            <input
+              type="tel"
+              id="citizenPhone"
+              placeholder="9876543210"
+              maxlength="10"
+            />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Issue Type (optional — AI will auto-detect)</label>
+          <select id="issueType">
+            <option value="Auto Detect">🤖 Auto Detect (Recommended)</option>
+            <option value="Pothole">🕳️ Pothole</option>
+            <option value="Broken Streetlight">💡 Broken Streetlight</option>
+            <option value="Garbage Dump">🗑️ Garbage Dump</option>
+            <option value="Water Leakage">💧 Water Leakage</option>
+            <option value="Damaged Road">🛣️ Damaged Road</option>
+            <option value="Open Drain">🌊 Open Drain</option>
+            <option value="Other">❓ Other</option>
+          </select>
+        </div>
+
+        <button class="btn-submit" id="submitBtn" onclick="submitReport()">
+          🚀 Submit Complaint
+        </button>
+
+        <!-- AI Result -->
+        <div class="ai-result" id="aiResult">
+          <h3>🤖 AI Analysis Result</h3>
+          <div id="aiContent"></div>
+        </div>
+
+        <!-- Success Card -->
+        <div class="success-card" id="successCard">
+          <div class="checkmark">✅</div>
+          <h3>Complaint Registered!</h3>
+          <div class="issue-id" id="issueIdDisplay"></div>
+          <p>
+            Your issue has been reported and will be reviewed by the concerned
+            department.
+          </p>
+          <p style="margin-top: 8px; color: #667eea; font-size: 12px">
+            Track it in "My Complaints"
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- MY COMPLAINTS PAGE -->
+    <div id="complaintsPage" class="page">
+      <div style="margin-top: 20px" id="complaintsContainer">
+        <div class="loading">
+          <div class="spinner"></div>
+          <p>Loading complaints...</p>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const API = "https://community-hero-782012687300.asia-south1.run.app";
+      let currentLat = null;
+      let currentLng = null;
+      let selectedImage = null;
+
+      // ─── LOCATION ───
+      function getLocation() {
+        if (!navigator.geolocation) {
+          document.getElementById("locationText").textContent =
+            "GPS not supported";
+          return;
+        }
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            currentLat = pos.coords.latitude;
+            currentLng = pos.coords.longitude;
+            document.getElementById("locationDot").classList.add("found");
+            document.getElementById("locationText").textContent =
+              `📍 ${currentLat.toFixed(5)}, ${currentLng.toFixed(5)}`;
+          },
+          () => {
+            document.getElementById("locationText").textContent =
+              "Location access denied";
+          },
+        );
+      }
+
+      // ─── IMAGE CAPTURE ───
+      document
+        .getElementById("cameraInput")
+        .addEventListener("change", function (e) {
+          const file = e.target.files[0];
+          if (!file) return;
+          selectedImage = file;
+          const reader = new FileReader();
+          reader.onload = (ev) => {
+            const preview = document.getElementById("imagePreview");
+            preview.src = ev.target.result;
+            preview.style.display = "block";
+            document.querySelector(".camera-section").style.display = "none";
+          };
+          reader.readAsDataURL(file);
+        });
+
+      function openCamera() {
+        if (!currentLat) {
+          alert(
+            "📍 Location not detected yet. Please allow location access and wait a moment.",
+          );
+          return;
+        }
+        document.getElementById("cameraInput").click();
+      }
+      // ─── SUBMIT ───
+      async function submitReport() {
+        const name = document.getElementById("citizenName").value.trim();
+        const phone = document.getElementById("citizenPhone").value.trim();
+
+        if (!selectedImage) return alert("Please capture a photo first!");
+        if (!name) return alert("Please enter your name!");
+        if (!phone || phone.length < 10)
+          return alert("Please enter a valid phone number!");
+        if (!currentLat)
+          return alert("Please allow location access and try again!");
+
+        const btn = document.getElementById("submitBtn");
+        btn.disabled = true;
+        btn.textContent = "🤖 AI is analyzing your photo...";
+
+        try {
+          const formData = new FormData();
+          formData.append("image", selectedImage);
+          formData.append("lat", currentLat);
+          formData.append("lng", currentLng);
+          formData.append("citizen_name", name);
+          formData.append("citizen_phone", "+91" + phone);
+          formData.append(
+            "issue_type",
+            document.getElementById("issueType").value,
+          );
+
+          const res = await fetch(`${API}/report`, {
+            method: "POST",
+            body: formData,
+          });
+
+          const data = await res.json();
+
+          if (!res.ok) throw new Error(data.detail || "Server error");
+
+          // Show AI result
+          const ai = data.ai_analysis;
+          document.getElementById("aiContent").innerHTML = `
+                <p style="font-size:16px; font-weight:600; margin-bottom:8px">${ai.title}</p>
+                <span class="ai-badge severity-${ai.severity}">${ai.severity} Severity</span>
+                <span class="ai-badge" style="background:#667eea33; color:#667eea; border:1px solid #667eea">${ai.category}</span>
+                <p style="color:#888; font-size:13px; margin-top:10px">${ai.description}</p>
+                <p style="color:#aaa; font-size:12px; margin-top:8px">🏢 Routes to: <strong>${ai.suggested_department}</strong></p>
+                <p style="color:#aaa; font-size:12px; margin-top:4px">⏰ ${ai.estimated_urgency}</p>
+                <p style="color:#555; font-size:11px; margin-top:6px">AI Confidence: ${(ai.confidence * 100).toFixed(0)}%</p>
+            `;
+          document.getElementById("aiResult").style.display = "block";
+
+          // Show success
+          document.getElementById("issueIdDisplay").textContent =
+            `Issue #${data.issue_id}`;
+          document.getElementById("successCard").style.display = "block";
+
+          // Save to local storage for "My Complaints"
+          const complaints = JSON.parse(
+            localStorage.getItem("myComplaints") || "[]",
+          );
+          complaints.unshift(data.issue_id);
+          localStorage.setItem("myComplaints", JSON.stringify(complaints));
+
+          btn.textContent = "✅ Submitted Successfully";
+        } catch (err) {
+          alert("Error: " + err.message);
+          btn.disabled = false;
+          btn.textContent = "🚀 Submit Complaint";
+        }
+      }
+
+      // ─── MY COMPLAINTS ───
+      async function loadComplaints() {
+        const container = document.getElementById("complaintsContainer");
+        const myIds = JSON.parse(localStorage.getItem("myComplaints") || "[]");
+
+        if (myIds.length === 0) {
+          container.innerHTML = `
+                <div class="empty-state">
+                    <div class="icon">📋</div>
+                    <p>No complaints yet</p>
+                    <p style="font-size:13px; margin-top:8px">Report an issue to see it here</p>
+                </div>`;
+          return;
+        }
+
+        container.innerHTML =
+          '<div class="loading"><div class="spinner"></div><p>Loading...</p></div>';
+
+        try {
+          const cards = await Promise.all(
+            myIds.map(async (id) => {
+              const res = await fetch(`${API}/issues/${id}`);
+              return res.ok ? await res.json() : null;
+            }),
+          );
+
+          container.innerHTML = cards
+            .filter(Boolean)
+            .map(
+              (issue) => `
+                <div class="complaint-card">
+                    <div class="complaint-header">
+                        <span class="complaint-id">#${issue.issue_id}</span>
+                        <span class="status-badge status-${issue.status}">${issue.status}</span>
+                    </div>
+                    <div class="complaint-title">${issue.ai_analysis?.title || "Issue Reported"}</div>
+                    <div class="complaint-meta">
+                        📍 ${issue.location?.lat?.toFixed(4)}, ${issue.location?.lng?.toFixed(4)} &nbsp;•&nbsp;
+                        🏢 ${issue.ai_analysis?.suggested_department || "N/A"}
+                    </div>
+                    <img class="complaint-img" src="${issue.image_url}" alt="Issue photo">
+                    <div style="display:flex; justify-content:space-between; align-items:center">
+                        <button class="upvote-btn" onclick="upvote('${issue.issue_id}', this)">
+                            👍 Upvote (${issue.upvotes || 0})
+                        </button>
+                        <span style="font-size:11px; color:#555">${new Date(issue.created_at).toLocaleDateString("en-IN")}</span>
+                    </div>
+                </div>
+            `,
+            )
+            .join("");
+        } catch (err) {
+          container.innerHTML = `<div class="empty-state"><p>Error loading complaints</p></div>`;
+        }
+      }
+
+      async function upvote(issueId, btn) {
+        await fetch(`${API}/issues/${issueId}/upvote`, { method: "POST" });
+        const current = parseInt(btn.textContent.match(/\d+/)[0]);
+        btn.textContent = `👍 Upvote (${current + 1})`;
+      }
+
+      // ─── NAVIGATION ───
+      function showPage(page) {
+        document
+          .querySelectorAll(".page")
+          .forEach((p) => p.classList.remove("active"));
+        document
+          .querySelectorAll(".nav button")
+          .forEach((b) => b.classList.remove("active"));
+
+        if (page === "report") {
+          document.getElementById("reportPage").classList.add("active");
+          document
+            .querySelector(".nav button:first-child")
+            .classList.add("active");
+        } else {
+          document.getElementById("complaintsPage").classList.add("active");
+          document
+            .querySelector(".nav button:last-child")
+            .classList.add("active");
+          loadComplaints();
+        }
+      }
+
+      // Init
+      getLocation();
+    </script>
+  </body>
+</html>

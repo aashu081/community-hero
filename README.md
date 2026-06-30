@@ -64,7 +64,7 @@ cd backend
 pip install -r requirements.txt
 ```
 
-Add your own .env file inside the backend folder with your Groq API key and Firebase service account details. This file is not included in the repo for safety reasons.
+Add your own .env file inside the backend folder with your Gemini API key/Groq API key and Firebase service account details. This file is not included in the repo for safety reasons.
 
 ```
 python main.py
